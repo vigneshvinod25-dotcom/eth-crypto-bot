@@ -16,9 +16,11 @@ def run_flask():
     app.run(host='0.0.0.0', port=port)
 
 def start_bot():
+    print("Starting Crypto Bot Loop...")
+    
     exchange = ccxt.binance({
         'apiKey': '8vT8K69pO2cppwXacKTx0UYgYCLaxEoBAMdd3ur0e4rb1TVuasN66eJPIaYkDdxL',
-        'secret': 'HkDJtlVYlf5sncC1Fi4Y95A3JX8WAcsUI0VBjCEzloP3K0G5NBDlOQFdfguyvh3QY',
+        'secret': 'HkDJtlVYlf5sncC1Fi4Y95A3JX8WAcsUI0VBjCEzloP3K0G5NBDlOQFdfguyvh3Q',
         'enableRateLimit': True,
     })
     
@@ -30,10 +32,10 @@ def start_bot():
 
     while True:
         try:
+            print("Checking ETH/USDT market data...")
             bars = exchange.fetch_ohlcv(symbol, timeframe=timeframe, limit=50)
             df = pd.DataFrame(bars, columns=['time', 'open', 'high', 'low', 'close', 'volume'])
             
-            # pandas മാത്രം ഉപയോഗിച്ച് EMA കണക്കാക്കുന്നു (pandas_ta ആവശ്യമില്ല)
             df['ema9'] = df['close'].ewm(span=9, adjust=False).mean()
             df['ema21'] = df['close'].ewm(span=21, adjust=False).mean()
 
@@ -55,11 +57,12 @@ def start_bot():
                 in_position = False
 
         except Exception as e:
-            print(f"Error: {e}")
+            print(f"Error in bot loop: {e}")
 
         time.sleep(60)
 
 if __name__ == "__main__":
     t = threading.Thread(target=start_bot)
+    t.daemon = True
     t.start()
     run_flask()
