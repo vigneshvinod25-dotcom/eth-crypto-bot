@@ -6,14 +6,7 @@ import pandas as pd
 from flask import Flask
 
 app = Flask(__name__)
-
-@app.route('/')
-def home():
-    return "Bot is running 24/7 on Binance Testnet!"
-
-def run_flask():
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+bot_started = False
 
 def start_bot():
     print("Starting Crypto Bot Loop...")
@@ -61,8 +54,19 @@ def start_bot():
 
         time.sleep(60)
 
+@app.before_request
+def init_bot():
+    global bot_started
+    if not bot_started:
+        bot_started = True
+        t = threading.Thread(target=start_bot)
+        t.daemon = True
+        t.start()
+
+@app.route('/')
+def home():
+    return "Bot is running 24/7 on Binance Testnet!"
+
 if __name__ == "__main__":
-    t = threading.Thread(target=start_bot)
-    t.daemon = True
-    t.start()
-    run_flask()
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
