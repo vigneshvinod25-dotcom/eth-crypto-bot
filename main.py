@@ -3,7 +3,6 @@ import time
 import threading
 import ccxt
 import pandas as pd
-import pandas_ta as ta
 from flask import Flask
 
 app = Flask(__name__)
@@ -19,7 +18,7 @@ def run_flask():
 def start_bot():
     exchange = ccxt.binance({
         'apiKey': '8vT8K69pO2cppwXacKTx0UYgYCLaxEoBAMdd3ur0e4rb1TVuasN66eJPIaYkDdxL',
-        'secret': 'HkDJtlVYlf5sncC1Fi4Y95A3JX8WAcsUI0VBjCEzloP3K0G5NBDlOQFdfguyvh3Q',
+        'secret': 'HkDJtlVYlf5sncC1Fi4Y95A3JX8WAcsUI0VBjCEzloP3K0G5NBDlOQFdfguyvh3QY',
         'enableRateLimit': True,
     })
     
@@ -34,8 +33,9 @@ def start_bot():
             bars = exchange.fetch_ohlcv(symbol, timeframe=timeframe, limit=50)
             df = pd.DataFrame(bars, columns=['time', 'open', 'high', 'low', 'close', 'volume'])
             
-            df['ema9'] = ta.ema(df['close'], length=9)
-            df['ema21'] = ta.ema(df['close'], length=21)
+            # pandas മാത്രം ഉപയോഗിച്ച് EMA കണക്കാക്കുന്നു (pandas_ta ആവശ്യമില്ല)
+            df['ema9'] = df['close'].ewm(span=9, adjust=False).mean()
+            df['ema21'] = df['close'].ewm(span=21, adjust=False).mean()
 
             prev_ema9 = df['ema9'].iloc[-3]
             prev_ema21 = df['ema21'].iloc[-3]
