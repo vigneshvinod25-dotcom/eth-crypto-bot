@@ -11,9 +11,12 @@ bot_started = False
 def start_bot():
     print("Starting Crypto Bot Loop...")
     
+    api_key = os.environ.get('BINANCE_API_KEY')
+    secret_key = os.environ.get('BINANCE_SECRET_KEY')
+
     exchange = ccxt.binance({
-        'apiKey': '8vT8K69pO2cppwXacKTx0UYgYCLaxEoBAMdd3ur0e4rb1TVuasN66eJPIaYkDdxL',
-        'secret': 'HkDJtlVYlf5sncC1Fi4Y95A3JX8WAcsUI0VBjCEzloP3K0G5NBDlOQFdfguyvh3Q',
+        'apiKey': api_key,
+        'secret': secret_key,
         'enableRateLimit': True,
     })
     
@@ -25,7 +28,6 @@ def start_bot():
 
     while True:
         try:
-            print("Checking ETH/USDT market data...")
             bars = exchange.fetch_ohlcv(symbol, timeframe=timeframe, limit=50)
             df = pd.DataFrame(bars, columns=['time', 'open', 'high', 'low', 'close', 'volume'])
             
@@ -37,16 +39,18 @@ def start_bot():
             curr_ema9 = df['ema9'].iloc[-2]
             curr_ema21 = df['ema21'].iloc[-2]
 
+            print(f"Checking {symbol}... Prev EMA9: {prev_ema9:.2f}, Prev EMA21: {prev_ema21:.2f} | Curr EMA9: {curr_ema9:.2f}, Curr EMA21: {curr_ema21:.2f}")
+
             if prev_ema9 < prev_ema21 and curr_ema9 > curr_ema21 and not in_position:
                 print("BUY Signal Generated for ETH/USDT!")
                 order = exchange.create_market_buy_order(symbol, 0.05)
-                print(order)
+                print(f"Order Success: {order}")
                 in_position = True
 
             elif prev_ema9 > prev_ema21 and curr_ema9 < curr_ema21 and in_position:
                 print("SELL Signal Generated for ETH/USDT!")
                 order = exchange.create_market_sell_order(symbol, 0.05)
-                print(order)
+                print(f"Order Success: {order}")
                 in_position = False
 
         except Exception as e:
