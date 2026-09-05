@@ -1,4 +1,4 @@
-ccxt
-pandas
 flask
-gunicorn
+pandas
+websocket-client
+requests
