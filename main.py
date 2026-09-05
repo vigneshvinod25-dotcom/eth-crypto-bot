@@ -8,7 +8,6 @@ import pandas as pd
 from flask import Flask
 
 app = Flask(__name__)
-bot_started = False
 
 candles = []
 
@@ -19,7 +18,7 @@ def send_telegram_msg(message):
         url = f"https://api.telegram.org/bot{token}/sendMessage"
         payload = {"chat_id": chat_id, "text": message}
         try:
-            requests.post(url, json=payload)
+            requests.post(url, json=payload, timeout=10)
         except Exception as e:
             print(f"Telegram Error: {e}", flush=True)
 
@@ -95,21 +94,15 @@ def start_websocket():
                 on_error=lambda ws, err: print(f"WS Error: {err}", flush=True),
                 on_close=lambda ws, status, msg: print("WS Closed. Reconnecting...", flush=True)
             )
-            # ping_interval ചേർത്തു - കണക്ഷൻ നിലനിൽക്കാൻ ഇത് സഹായിക്കും
-            ws.run_forever(ping_interval=30, ping_timeout=10)
+            ws.run_forever(ping_interval=20, ping_timeout=10)
         except Exception as e:
             print(f"WebSocket Exception: {e}", flush=True)
         
-        time.sleep(5)  # Reconnect delay
+        time.sleep(5)
 
-@app.before_request
-def init_bot():
-    global bot_started
-    if not bot_started:
-        bot_started = True
-        t = threading.Thread(target=start_websocket)
-        t.daemon = True
-        t.start()
+# Start WebSocket on background thread when app starts
+ws_thread = threading.Thread(target=start_websocket, daemon=True)
+ws_thread.start()
 
 @app.route('/')
 def home():
