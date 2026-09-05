@@ -6,6 +6,7 @@ import requests
 import websocket
 import pandas as pd
 from flask import Flask
+from waitress import serve
 
 app = Flask(__name__)
 
@@ -88,7 +89,6 @@ def start_websocket():
     print("Starting Binance WebSocket Stream...", flush=True)
     send_telegram_msg("🚀 WebSocket Signal Bot Active!")
 
-    # Signal process thread
     t = threading.Thread(target=process_signals, daemon=True)
     t.start()
 
@@ -108,7 +108,7 @@ def start_websocket():
         
         time.sleep(3)
 
-# Start WebSocket automatically on app execution
+# Start WebSocket thread
 t_ws = threading.Thread(target=start_websocket, daemon=True)
 t_ws.start()
 
@@ -118,4 +118,4 @@ def home():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    serve(app, host='0.0.0.0', port=port)
