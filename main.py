@@ -10,7 +10,6 @@ from flask import Flask
 app = Flask(__name__)
 bot_started = False
 
-# Global list to store historical candle closes
 candles = []
 
 def send_telegram_msg(message):
@@ -29,7 +28,7 @@ def process_signals():
     in_position = False
     
     while True:
-        if len(candles) >= 25:
+        if len(candles) >= 21:
             df = pd.DataFrame(candles, columns=['close'])
             df['ema9'] = df['close'].ewm(span=9, adjust=False).mean()
             df['ema21'] = df['close'].ewm(span=21, adjust=False).mean()
@@ -39,8 +38,6 @@ def process_signals():
             curr_ema9 = df['ema9'].iloc[-2]
             curr_ema21 = df['ema21'].iloc[-2]
             last_price = df['close'].iloc[-1]
-
-            print(f"EMA Check -> Prev EMA9: {prev_ema9:.2f}, Prev EMA21: {prev_ema21:.2f} | Curr EMA9: {curr_ema9:.2f}, Curr EMA21: {curr_ema21:.2f}")
 
             # BUY SIGNAL
             if prev_ema9 < prev_ema21 and curr_ema9 > curr_ema21 and not in_position:
@@ -56,7 +53,7 @@ def process_signals():
                 send_telegram_msg(msg)
                 in_position = False
 
-        time.sleep(30)
+        time.sleep(10)
 
 def on_message(ws, message):
     global candles
@@ -65,21 +62,30 @@ def on_message(ws, message):
     is_candle_closed = kline['x']
     close_price = float(kline['c'])
 
-    # Only append closed 5m candles
     if is_candle_closed:
         candles.append(close_price)
         if len(candles) > 50:
             candles.pop(0)
-        print(f"New 5m Candle Closed: ${close_price}")
+
+        # Calculate live EMA values to show in logs
+        if len(candles) >= 21:
+            df = pd.DataFrame(candles, columns=['close'])
+            df['ema9'] = df['close'].ewm(span=9, adjust=False).mean()
+            df['ema21'] = df['close'].ewm(span=21, adjust=False).mean()
+            
+            curr_ema9 = df['ema9'].iloc[-1]
+            curr_ema21 = df['ema21'].iloc[-1]
+            
+            print(f"Candle Closed | Price: ${close_price:.2f} | EMA9: {curr_ema9:.2f} | EMA21: {curr_ema21:.2f}")
+        else:
+            print(f"Candle Closed | Price: ${close_price:.2f} | Collecting candles ({len(candles)}/21)...")
 
 def start_websocket():
     print("Starting Binance WebSocket Stream...")
     send_telegram_msg("🚀 WebSocket Signal Bot Active!")
 
-    # Start signal checker thread
     threading.Thread(target=process_signals, daemon=True).start()
 
-    # Binance WebSocket URL for ETH/USDT 5m Kline
     socket_url = "wss://stream.binance.com:9443/ws/ethusdt@kline_5m"
     
     ws = websocket.WebSocketApp(
@@ -101,6 +107,11 @@ def init_bot():
 
 @app.route('/')
 def home():
+    return "WebSocket Signal Bot Running!"
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
     return "WebSocket Signal Bot Running!"
 
 if __name__ == "__main__":
