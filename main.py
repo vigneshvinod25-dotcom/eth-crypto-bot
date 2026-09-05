@@ -60,7 +60,6 @@ def on_message(ws, message):
     is_candle_closed = kline['x']
     close_price = float(kline['c'])
 
-    # Live ticker output on every single price tick
     print(f"Live Price: ${close_price:.2f}", flush=True)
 
     if is_candle_closed:
@@ -88,13 +87,20 @@ def start_websocket():
 
     socket_url = "wss://stream.binance.com:9443/ws/ethusdt@kline_5m"
     
-    ws = websocket.WebSocketApp(
-        socket_url,
-        on_message=on_message,
-        on_error=lambda ws, err: print(f"WS Error: {err}", flush=True),
-        on_close=lambda ws, status, msg: print("WS Closed", flush=True)
-    )
-    ws.run_forever()
+    while True:
+        try:
+            ws = websocket.WebSocketApp(
+                socket_url,
+                on_message=on_message,
+                on_error=lambda ws, err: print(f"WS Error: {err}", flush=True),
+                on_close=lambda ws, status, msg: print("WS Closed. Reconnecting...", flush=True)
+            )
+            # ping_interval ചേർത്തു - കണക്ഷൻ നിലനിൽക്കാൻ ഇത് സഹായിക്കും
+            ws.run_forever(ping_interval=30, ping_timeout=10)
+        except Exception as e:
+            print(f"WebSocket Exception: {e}", flush=True)
+        
+        time.sleep(5)  # Reconnect delay
 
 @app.before_request
 def init_bot():
