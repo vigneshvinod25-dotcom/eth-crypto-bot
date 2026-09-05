@@ -21,10 +21,18 @@ def start_bot():
     })
     
     exchange.set_sandbox_mode(True) 
-    
     symbol = 'ETH/USDT'
     timeframe = '5m'
     in_position = False
+
+    # --- TEST ORDER START ---
+    try:
+        print("Testing Testnet Order Placement...")
+        test_order = exchange.create_market_buy_order(symbol, 0.05)
+        print("TEST ORDER SUCCESSFUL! Order Details:", test_order)
+    except Exception as e:
+        print("TEST ORDER FAILED! Error:", e)
+    # --- TEST ORDER END ---
 
     while True:
         try:
